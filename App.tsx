@@ -8,12 +8,16 @@
 import React from 'react';
 import type {PropsWithChildren} from 'react';
 import {
+  Pressable,
   ScrollView,
   StatusBar,
   StyleSheet,
   Text,
+  Touchable,
+  TouchableOpacity,
   useColorScheme,
   View,
+  Button
 } from 'react-native';
 
 import {
@@ -23,6 +27,7 @@ import {
   LearnMoreLinks,
   ReloadInstructions,
 } from 'react-native/Libraries/NewAppScreen';
+import { useCheckVersion } from './useCheckVersion';
 
 type SectionProps = PropsWithChildren<{
   title: string;
@@ -56,6 +61,7 @@ function Section({children, title}: SectionProps): React.JSX.Element {
 
 function App(): React.JSX.Element {
   const isDarkMode = useColorScheme() === 'dark';
+  const { version } = useCheckVersion();
 
   const backgroundStyle = {
     backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
@@ -71,6 +77,13 @@ function App(): React.JSX.Element {
    * https://github.com/react-native-community/discussions-and-proposals/discussions/827
    */
   const safePadding = '5%';
+
+  console.log('Dispatching OTA');
+  const handleDispatchOTA = () => {
+    console.log('Dispatching OTA');
+
+    
+  }
 
   return (
     <View style={backgroundStyle}>
@@ -93,16 +106,12 @@ function App(): React.JSX.Element {
             Edit <Text style={styles.highlight}>App.tsx</Text> to change this
             screen and then come back to see your edits.
           </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
+
+          
+          <Button title={'rollback OTA'} onPress={version.rollBack} />
+          <Button title={'check update Git'} onPress={version.onCheckGitVersion} />
+          <Button title={'remove update Git'} onPress={version.removeGitUpdate} />
+         
         </View>
       </ScrollView>
     </View>

@@ -1,0 +1,143 @@
+import hotUpdate from 'react-native-ota-hot-update';
+import { Alert, LayoutAnimation, Platform, UIManager } from 'react-native';
+import ReactNativeBlobUtil from 'react-native-blob-util';
+import React from 'react';
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
+
+export const useCheckVersion = () => {
+  const [progress, setProgress] = React.useState(0);
+  const [loading, setLoading] = React.useState(false);
+  const [version, setVersion] = React.useState('0');
+  const startUpdate = async (url: string, version: number) => {
+    hotUpdate.downloadBundleUri(ReactNativeBlobUtil, url, version, {
+      updateSuccess: () => {
+        console.log('update success!');
+      },
+      updateFail(message?: string) {
+        Alert.alert('Update failed!', message, [
+          {
+            text: 'Cancel',
+            onPress: () => console.log('Cancel Pressed'),
+            style: 'cancel',
+          },
+        ]);
+      },
+      progress(received: string, total: string) {
+        const percent = (+received / +total) * 100;
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setProgress(percent);
+      },
+      restartAfterInstall: true,
+    });
+  };
+
+  const rollBack = async () => {
+    const rs = await hotUpdate.rollbackToPreviousBundle();
+    if (rs) {
+      Alert.alert('Rollback success', 'Restart to apply', [
+        {
+          text: 'Ok',
+          onPress: () => hotUpdate.resetApp(),
+          style: 'cancel',
+        },
+      ]);
+    } else {
+      Alert.alert('Oops', 'No bundle to rollback', [
+        {
+          text: 'cancel',
+          onPress: () => {},
+          style: 'cancel',
+        },
+      ]);
+    }
+  };
+
+  const onCheckGitVersion = () => {
+    setProgress(0);
+    setLoading(true);
+    hotUpdate.git.checkForGitUpdate({
+      branch: Platform.OS === 'ios' ? 'iOS' : 'android',
+      bundlePath:
+        Platform.OS === 'ios'
+          ? 'output/main.jsbundle'
+          : 'output/index.android.bundle',
+      url: 'https://github.com/MariaFF/overtheairtest',
+      onCloneFailed(msg: string) {
+        Alert.alert('Clone project failed!', msg, [
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+        ]);
+      },
+      onCloneSuccess() {
+        Alert.alert('Clone project success!', 'Restart to apply the changing', [
+          {
+            text: 'ok',
+            onPress: () => hotUpdate.resetApp(),
+          },
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+        ]);
+      },
+      onPullFailed(msg: string) {
+        Alert.alert('Pull project failed!', msg, [
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+        ]);
+      },
+      onPullSuccess() {
+        Alert.alert('Pull project success!', 'Restart to apply the changing', [
+          {
+            text: 'ok',
+            onPress: () => hotUpdate.resetApp(),
+          },
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+        ]);
+      },
+      onProgress(received: number, total: number) {
+        const percent = (+received / +total) * 100;
+        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+        setProgress(percent);
+      },
+      onFinishProgress() {
+        setLoading(false);
+      },
+    });
+  };
+  const removeGitUpdate = () => {
+    hotUpdate.git.removeGitUpdate();
+  };
+  React.useEffect(() => {
+    hotUpdate.getCurrentVersion().then((data) => {
+      setVersion(`${data}`);
+    });
+  }, []);
+  return {
+    version: {
+      onCheckGitVersion,
+      removeGitUpdate,
+      rollBack,
+      state: {
+        progress,
+        loading,
+        version,
+      },
+    },
+  };
+};
